@@ -14,16 +14,53 @@
 
 namespace bustub {
 
-LRUReplacer::LRUReplacer(size_t num_pages) {}
+// LRUReplacer::LRUReplacer(size_t num_pages) {}
 
 LRUReplacer::~LRUReplacer() = default;
 
-bool LRUReplacer::Victim(frame_id_t *frame_id) { return false; }
+LRUReplacer::LRUReplacer(size_t num_pages)
+{
+  max_pages = num_pages;
+  cur_pages = 0;
+}
 
-void LRUReplacer::Pin(frame_id_t frame_id) {}
+bool LRUReplacer::Victim(frame_id_t *frame_id)
+{
+  if (cur_pages == 0) return false;
+  *frame_id = frame_ids.back();
+  frame_ids.pop_back();
+  cur_pages --;
+  return true;
+}
 
-void LRUReplacer::Unpin(frame_id_t frame_id) {}
+void LRUReplacer::Pin(frame_id_t frame_id)
+{
+  auto iter = std::find(frame_ids.begin(), frame_ids.end(), frame_id);
+  if(iter == frame_ids.end()) return;
+  
+  frame_ids.erase(iter);
+  cur_pages --;
+}
 
-size_t LRUReplacer::Size() { return 0; }
+void LRUReplacer::Unpin(frame_id_t frame_id)
+{
+  auto iter = std::find(frame_ids.begin(), frame_ids.end(), frame_id);
+  if (iter != frame_ids.end())
+  {
+    return;
+  }
+  if (cur_pages == max_pages)
+  {
+    frame_id_t vict_id;
+    Victim(&vict_id);
+  }
+  frame_ids.push_front(frame_id);
+  cur_pages ++;
+}
+size_t LRUReplacer::Size()
+{
+  return cur_pages;
+};
+
 
 }  // namespace bustub
