@@ -172,9 +172,7 @@ class BufferPoolManager {
 private:
   bool isInPageTable(page_id_t page_id)
   {
-    latch_.lock();
     bool b = page_table_.find(page_id) != page_table_.end();
-    latch_.unlock();
     return b;
   }
 
