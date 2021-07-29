@@ -42,6 +42,9 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   void SetKeyAt(int index, const KeyType &key);
   int ValueIndex(const ValueType &value) const;
   ValueType ValueAt(int index) const;
+  void SetValueAt(int index, const ValueType &value);
+
+  void SetKeyValueAt(int index, const KeyType &key, const ValueType &value);
 
   ValueType Lookup(const KeyType &key, const KeyComparator &comparator) const;
   void PopulateNewRoot(const ValueType &old_value, const KeyType &new_key, const ValueType &new_value);

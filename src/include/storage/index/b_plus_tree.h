@@ -87,8 +87,12 @@ class BPlusTree {
   void InsertIntoParent(BPlusTreePage *old_node, const KeyType &key, BPlusTreePage *new_node,
                         Transaction *transaction = nullptr);
 
-  template <typename N>
-  N *Split(N *node);
+  // template <typename N>
+  // N *Split(N *node);
+
+  LeafPage *Split(LeafPage *node);
+
+  InternalPage *Split(InternalPage *node);
 
   template <typename N>
   bool CoalesceOrRedistribute(N *node, Transaction *transaction = nullptr);
@@ -108,6 +112,18 @@ class BPlusTree {
   void ToGraph(BPlusTreePage *page, BufferPoolManager *bpm, std::ofstream &out) const;
 
   void ToString(BPlusTreePage *page, BufferPoolManager *bpm) const;
+
+  /*
+   some custom helper method
+  */
+  template<typename T>
+  T *GetBPlusPage(page_id_t page_id)
+  {
+    Page *page = buffer_pool_manager_->FetchPage(page_id);
+    if (page == nullptr) throw "out of memory";
+
+    return reinterpret_cast<T *>(page->GetData());
+  }
 
   // member variable
   std::string index_name_;

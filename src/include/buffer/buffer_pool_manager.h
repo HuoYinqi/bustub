@@ -52,6 +52,13 @@ class BufferPoolManager {
     return result;
   }
 
+  Page *WrapFetchPage(page_id_t page_id)
+  {
+    Page *page = FetchPage(page_id);
+    if (page  == nullptr) throw "out of memory";
+    return page;
+  }
+
   /** Grading function. Do not modify! */
   bool UnpinPage(page_id_t page_id, bool is_dirty, bufferpool_callback_fn callback = nullptr) {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
@@ -74,6 +81,13 @@ class BufferPoolManager {
     auto *result = NewPageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, *page_id);
     return result;
+  }
+
+  Page *WrapNewPage(page_id_t *page_id)
+  {
+    Page *new_page = NewPage(page_id);
+    if (new_page == nullptr) throw "out of memory";
+    return new_page;
   }
 
   /** Grading function. Do not modify! */
