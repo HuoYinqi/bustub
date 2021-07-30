@@ -23,6 +23,9 @@ namespace bustub {
 
 #define BPLUSTREE_TYPE BPlusTree<KeyType, ValueType, KeyComparator>
 
+#define LEFT 0
+#define RIGHT 1
+
 /**
  * Main class providing the API for the Interactive B+ Tree.
  *
@@ -77,7 +80,23 @@ class BPlusTree {
   // read data from file and remove one by one
   void RemoveFromFile(const std::string &file_name, Transaction *transaction = nullptr);
   // expose for test purpose
-  Page *FindLeafPage(const KeyType &key, bool leftMost = false);
+  LeafPage *FindLeafPage(const KeyType &key, bool leftMost = false)
+  {
+    if (IsEmpty()) return nullptr;
+
+    BPlusTreePage *page = GetBPlusPage<BPlusTreePage>(root_page_id_);
+    while(!page->IsLeafPage())
+    {
+      InternalPage *ipage = reinterpret_cast<InternalPage *>(page);
+      page_id_t child_id = ipage->Lookup(key, comparator_);
+
+      buffer_pool_manager_->UnpinPage(ipage->GetPageId(), false);
+      page = GetBPlusPage<BPlusTreePage>(child_id);
+    }
+
+    LeafPage *lpage = reinterpret_cast<LeafPage *>(page);
+    return lpage;
+  }
 
  private:
   void StartNewTree(const KeyType &key, const ValueType &value);
@@ -90,6 +109,58 @@ class BPlusTree {
   // template <typename N>
   // N *Split(N *node);
 
+  LeafPage *FindLeftSilbing(LeafPage *node)
+  {
+    page_id_t parent_id =  node->GetParentPageId();
+    if (parent_id == INVALID_PAGE_ID) return nullptr;
+    
+    InternalPage *ipage = GetBPlusPage<InternalPage>(parent_id);
+    int index = ipage->ValueIndex(node->GetPageId());
+    if (index == 0) return nullptr;
+
+    LeafPage *silb_page = GetBPlusPage<LeafPage>(ipage->ValueAt(index - 1));
+    buffer_pool_manager_->UnpinPage(parent_id, false);
+    return silb_page;
+  }
+
+  LeafPage *FindRightSilbing(LeafPage *node)
+  {
+    if (node->GetNextPageId() == INVALID_PAGE_ID) return nullptr;
+
+    page_id_t page_id = node->GetNextPageId();
+    LeafPage *lpage = GetBPlusPage<LeafPage>(page_id);
+    return lpage;
+  }
+
+  InternalPage *FindLeftSilbing(InternalPage *node)
+  {
+    page_id_t parent_id =  node->GetParentPageId();
+    if (parent_id == INVALID_PAGE_ID) return nullptr;
+    
+    InternalPage *ipage = GetBPlusPage<InternalPage>(parent_id);
+    int index = ipage->ValueIndex(node->GetPageId());
+    if (index == 0) return nullptr;
+
+    InternalPage *silb_page = GetBPlusPage<InternalPage>(ipage->ValueAt(index - 1));
+    buffer_pool_manager_->UnpinPage(parent_id, false);
+    return silb_page;
+  }
+
+  InternalPage *FindRightSilbing(InternalPage *node)
+  {
+    page_id_t parent_id =  node->GetParentPageId();
+    if (parent_id == INVALID_PAGE_ID) return nullptr;
+    
+    InternalPage *ipage = GetBPlusPage<InternalPage>(parent_id);
+    int index = ipage->ValueIndex(node->GetPageId());
+    if (index == node->GetSize() - 1) return nullptr;
+
+    InternalPage *silb_page = GetBPlusPage<InternalPage>(ipage->ValueAt(index + 1));
+    buffer_pool_manager_->UnpinPage(parent_id, false);
+    return silb_page;
+  }
+
+
   LeafPage *Split(LeafPage *node);
 
   InternalPage *Split(InternalPage *node);
@@ -97,12 +168,19 @@ class BPlusTree {
   template <typename N>
   bool CoalesceOrRedistribute(N *node, Transaction *transaction = nullptr);
 
-  template <typename N>
-  bool Coalesce(N **neighbor_node, N **node, BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> **parent,
-                int index, Transaction *transaction = nullptr);
+  // template <typename N>
+  // bool Coalesce(N **neighbor_node, N **node, BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator> **parent,
+  //               int index, Transaction *transaction = nullptr);
 
-  template <typename N>
-  void Redistribute(N *neighbor_node, N *node, int index);
+  void Coalesce(InternalPage *left_node, InternalPage *right_node, InternalPage *parent,
+                Transaction *transaction = nullptr);
+
+  void Coalesce(LeafPage *left_node, LeafPage *right_node, InternalPage *parent, Transaction *transaction = nullptr);
+
+  void Redistribute(LeafPage *node, LeafPage *neighber_node, InternalPage* parent, int dire);
+
+  void Redistribute(InternalPage *node, InternalPage *neighber_node,
+                    InternalPage* parent, KeyType middle_key, int dire);
 
   bool AdjustRoot(BPlusTreePage *node);
 
