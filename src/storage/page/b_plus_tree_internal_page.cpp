@@ -132,7 +132,6 @@ int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter
 (const ValueType &old_value, const KeyType &new_key,const ValueType &new_value)
 {
   int old_index = ValueIndex(old_value) + 1;
-  printf("old_value = %d, old_index = %d\n", old_value, old_index);
   memmove(static_cast<void *>(array + old_index + 1), 
           static_cast<void *>(array + old_index),
           (GetSize() - old_index) * sizeof(MappingType));
